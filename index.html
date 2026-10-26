@@ -199,6 +199,7 @@
 
     <!-- Lightning Flash Overlay -->
     <div id="lightning-overlay"></div>
+    <audio id="background-music" src="harry.mp3" autoplay loop preload="auto"></audio>
     <audio id="jumpscare-audio" preload="auto">
         <source src="scream.wav.mp3" type="audio/mpeg">
     </audio>
@@ -796,17 +797,38 @@
         const jumpscareImgContainer = document.getElementById('jumpscare-img-container');
         const btnCloseJumpscare = document.getElementById('btn-close-jumpscare');
         const jumpscareAudio = document.getElementById('jumpscare-audio');
+        const backgroundMusic = document.getElementById('background-music');
 
-        function triggerJumpscare() {
+        backgroundMusic.volume = 0.05;
+
+        function resumeBackgroundMusic() {
+            document.removeEventListener('pointerdown', resumeBackgroundMusic);
+            document.removeEventListener('keydown', resumeBackgroundMusic);
+            backgroundMusic.play().catch(() => {
+                showToast('Background music could not be played. Check harry.mp3.');
+            });
+        }
+
+        backgroundMusic.play().catch(() => {
+            document.addEventListener('pointerdown', resumeBackgroundMusic, { once: true });
+            document.addEventListener('keydown', resumeBackgroundMusic, { once: true });
+        });
+
+        async function triggerJumpscare() {
+            backgroundMusic.pause();
+
             // Unhide Overlay Page
             jumpscarePage.classList.remove('hidden');
             jumpscarePage.classList.add('flex', 'jumpscare-active');
             jumpscareImgContainer.classList.add('jumpscare-image-shake');
 
-            jumpscareAudio.currentTime = 0;
-            jumpscareAudio.play().catch(() => {
-                showToast('The scream recording could not be decoded. Check scream.wav.mp3.');
-            });
+            try {
+                jumpscareAudio.currentTime = 0;
+                await jumpscareAudio.play();
+            } catch (error) {
+                console.error('Unable to play jumpscare audio:', error);
+                showToast('The scream recording could not be played. Check scream.wav.mp3.');
+            }
 
             // Trigger Screen Lightning Flash
             lightningOverlay.style.opacity = '0.95';
@@ -816,6 +838,9 @@
         btnCloseJumpscare.addEventListener('click', () => {
             jumpscareAudio.pause();
             jumpscareAudio.currentTime = 0;
+            backgroundMusic.play().catch(() => {
+                showToast('Background music could not be played. Check harry.mp3.');
+            });
             jumpscarePage.classList.add('hidden');
             jumpscarePage.classList.remove('flex', 'jumpscare-active');
             jumpscareImgContainer.classList.remove('jumpscare-image-shake');
